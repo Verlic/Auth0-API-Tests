@@ -4,13 +4,14 @@
   "description": "",
   "main": "app.js",
   "scripts": {
-    "test": "/node_modules/mocha/bin/mocha tests"
+    "test": "node_modules/mocha/bin/mocha tests"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
     "chai": "^3.3.0",
     "dotenv": "^1.2.0",
+    "jsonwebtoken": "^5.0.5",
     "mocha": "^2.3.3",
     "request": "^2.64.0",
     "tv4": "^1.2.7",
