@@ -1,4 +1,5 @@
 var dotenv = require('dotenv').load(),
+	async = require('async'),
 	chai = require('chai'),
 	urlJoin = require('url-join'),
 	request = require('request'),
@@ -6,6 +7,7 @@ var dotenv = require('dotenv').load(),
 	domain = 'https://' + process.env.DOMAIN,
 	token = process.env.TOKEN,
 	auth0Api = require('./auth0-api')(domain, token),
+	assert = chai.assert,
 	expect = chai.expect,
 	schemas = require('./schemas'),
 	jwt = require('jsonwebtoken');
@@ -51,9 +53,7 @@ describe('Auth0 API v2', function () {
 				if (body && response.statusCode === 200) {
 					var data = JSON.parse(body);
 					var isValid = validator.validate(data, schemas.get_connections_response);
-					if (!isValid) {
-						console.error(validator.error);
-					}
+					assert(isValid, validator.error);
 
 					// Search for the test connection
 					for (var i = 0; i < data.length; i++) {
@@ -92,9 +92,7 @@ describe('Auth0 API v2', function () {
 				if (body) {
 					var data = JSON.parse(body);
 					var isValid = validator.validate(data, schemas.post_connections_body);
-					if (!isValid) {
-						console.error(validator.error);
-					}
+					assert(isValid, validator.error);
 				}
 
 				done(error);
@@ -114,13 +112,12 @@ describe('Auth0 API v2', function () {
 				if (body && response.statusCode === 200) {
 					var data = JSON.parse(body);
 					var isValid = validator.validate(data, schemas.get_users_response);
-					if (!isValid) {
-						console.error(validator.error);
-					} else {
+					assert(isValid, validator.error);
+					if (isValid) {
 						userCount = data.length;
-					}					
+					}
 				}
-				
+
 				done(error);
 			});
 		});
@@ -140,9 +137,7 @@ describe('Auth0 API v2', function () {
 
 				if (body) {
 					var isValid = validator.validate(body, schemas.post_users_body, false, true);
-					if (!isValid) {						
-						console.error(validator.error);
-					}
+					assert(isValid, validator.error);
 				}
 
 				done(error);
@@ -159,13 +154,13 @@ describe('Auth0 API v2', function () {
 				if (body && response.statusCode === 200) {
 					var data = JSON.parse(body);
 					var isValid = validator.validate(data, schemas.get_users_response);
-					if (!isValid) {
-						console.error(validator.error);
-					} else {
+					assert(isValid, validator.error);
+					if (isValid) {
 						expect(data.length).to.be.equal(userCount + 1);
-					}					
+					}
+
 				}
-				
+
 				done(error);
 			});
 		});
@@ -183,22 +178,22 @@ describe('Auth0 API v2', function () {
 				if (body && response.statusCode === 200) {
 					var data = JSON.parse(body);
 					var isValid = validator.validate(data, schemas.get_rules_response);
-					if (!isValid) {
-						console.error(validator.error);
-					}
+					assert(isValid, validator.error);
+						
 
 					// Remove all rules
-					for (var i = 0; i < data.length; i++) {
-						ruleId = data[i].id;
-						auth0Api.rules.deleteRule(ruleId, function (error, response, body) {
+					async.forEach(data, function (rule, callback) {
+						auth0Api.rules.deleteRule(rule.id, function (error, response, body) {
 							expect(response).not.to.be.empty;
 							expect(response.statusCode).to.be.equal(204); // REMOVED
 							expect(error).to.be.null;
 							expect(body).to.be.empty;
-							done(error);
+							callback();
 						});
-
-					}
+					}, function (err) {
+						assert(!err, err);
+						done();
+					});
 				} else {
 					done(error);
 				}
@@ -216,9 +211,7 @@ describe('Auth0 API v2', function () {
 				if (body) {
 					var data = JSON.parse(body);
 					var isValid = validator.validate(data, schemas.post_rules_body);
-					if (!isValid) {
-						console.error(validator.error);
-					}
+					assert(isValid, validator.error);
 				}
 
 				done(error);
@@ -231,10 +224,7 @@ describe('Auth0 API v2', function () {
 			// Act
 			auth0Api.oauth.authenticate(auth, function (error, response, body) {
 				// Expect
-				if (error) {
-					console.error(error);
-				}
-
+				assert(!error, error);
 				expect(response).not.to.be.empty;
 				expect(response.statusCode).to.be.equal(200); // CREATED
 				expect(error).to.be.null;
@@ -251,10 +241,7 @@ describe('Auth0 API v2', function () {
 			// Act
 			auth0Api.oauth.tokenInfo(tokenInfo, function (error, response, body) {
 				// Expect
-				if (error) {
-					console.error(error);
-				}
-
+				assert(!error, error);
 				expect(response).not.to.be.empty;
 				expect(response.statusCode).to.be.equal(200); // CREATED
 				expect(error).to.be.null;
